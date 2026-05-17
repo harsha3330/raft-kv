@@ -15,9 +15,11 @@ const (
 )
 
 type Command struct {
-	Op  Operation `json:"op"`
-	Key string    `json:"key"`
-	Val string    `json:"val"`
+	Index int       `json:"index"`
+	Term  int       `json:"term"`
+	Op    Operation `json:"op"`
+	Key   string    `json:"key"`
+	Val   string    `json:"val"`
 }
 
 type CommitLog struct {
@@ -57,16 +59,44 @@ func (c *CommitLog) Append(cmd Command) error {
 	return c.File.Sync()
 }
 
-func (c *CommitLog) Replay(handler func(Command)) error {
+func (c *CommitLog) Replay(handler func(Command)) (int, error) {
 	scanner := bufio.NewScanner(c.File)
+	var lastIndex int
 	for scanner.Scan() {
 		line := scanner.Bytes()
 		var cmd Command
 		err := json.Unmarshal(line, &cmd)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		handler(cmd)
+		lastIndex = cmd.Index
 	}
-	return scanner.Err()
+	return lastIndex, scanner.Err()
+}
+
+func (c *CommitLog) ReadFrom(index int) ([]Command, error) {
+	file, err := os.Open(c.File.Name())
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var entries []Command
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		var cmd Command
+		err := json.Unmarshal(line, &cmd)
+		if err != nil {
+			return nil, err
+		}
+		if cmd.Index >= index {
+			entries = append(entries, cmd)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return entries, nil
 }

@@ -1,1 +1,5 @@
-{"op":"SET","key":"name","val":"harsha"}
+{"index":1,"term":0,"op":"SET","key":"superhero","val":"batman"}
+{"index":2,"term":0,"op":"SET","key":"name","val":"deva"}
+{"index":3,"term":0,"op":"DELETE","key":"name","val":""}
+{"index":4,"term":0,"op":"SET","key":"name","val":"deva"}
+{"index":5,"term":0,"op":"SET","key":"name","val":"deva"}
